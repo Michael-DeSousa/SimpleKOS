@@ -1,0 +1,9 @@
+## Interface: 20501
+## Title: GankList
+## Author: Dessia
+## Notes: A handy addon to track your gankers!
+## Version: 1.0
+
+embeds.xml
+
+main.lua
