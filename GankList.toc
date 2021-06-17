@@ -3,6 +3,7 @@
 ## Author: Dessia
 ## Notes: A handy addon to track your gankers!
 ## Version: 1.0
+## SavedVariables: GankListDB
 
 embeds.xml
 
