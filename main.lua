@@ -1,6 +1,89 @@
+local ganklistFrame = CreateFrame("Frame", "GanklistFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
+ganklistFrame:SetPoint("CENTER")
+ganklistFrame:SetSize(180, 128)
+ganklistFrame:EnableMouse(true)
+ganklistFrame:SetMovable(true)
+ganklistFrame:SetResizable(true)
+ganklistFrame:SetMinResize(160, 30)
+ganklistFrame:SetClampedToScreen(true)
+ganklistFrame:RegisterForDrag("LeftButton")
+ganklistFrame:SetScript("OnMouseDown", ganklistFrame.StartMoving)
+ganklistFrame:SetScript("OnMouseUp", ganklistFrame.StopMovingOrSizing)
+ganklistFrame:SetBackdrop(	{
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    tile = true,
+    tileSize = 32,
+})
+ganklistFrame:SetBackdropColor(0, 0, 0, 0.5)
+
+local ganklistTitle = ganklistFrame:CreateFontString(ganklistFrame, "OVERLAY", "GameTooltipText")
+ganklistTitle:SetPoint("BOTTOM", ganklistFrame, "TOP")
+ganklistTitle:SetText("Ganklist")
+
+local playerRecordFrame = CreateFrame("Frame", "playerRecordFrame", ganklistFrame, BackdropTemplateMixin and "BackdropTemplate")
+playerRecordFrame:SetPoint("TOPLEFT", ganklistFrame, "TOPLEFT")
+playerRecordFrame:SetPoint("TOPRIGHT", ganklistFrame, "TOPRIGHT")
+playerRecordFrame:SetHeight(26)
+
+playerRecordFrame:SetBackdrop(	{
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    tile = true,
+    tileSize = 32,
+})
+
+local classColor = RAID_CLASS_COLORS["DRUID"]
+playerRecordFrame:SetBackdropColor(classColor.r, classColor.g, classColor.b, 0.65)
+
+local playerRecordName = playerRecordFrame:CreateFontString(playerRecordFrame, "OVERLAY", "GameTooltipText")
+playerRecordName:SetPoint("LEFT", playerRecordFrame, "LEFT", 10, 0)
+playerRecordName:SetText("FROSTHAMMER")
+
+local playerClassIcon = playerRecordFrame:CreateTexture("PlayerClassIcon", "ARTWORK")
+playerClassIcon:SetPoint("RIGHT", playerRecordFrame, "RIGHT", -5, 0)
+playerClassIcon:SetTexture("Interface/Icons/ClassIcon_Warlock")
+playerClassIcon:SetSize(20, 20)
+
+local playerRaceIcon = playerRecordFrame:CreateTexture("PlayerRaceIcon", "ARTWORK")
+playerRaceIcon:SetPoint("RIGHT", playerClassIcon, "LEFT", 0, 0)
+playerRaceIcon:SetTexture("Interface/Glues/CharacterCreate/UI-CHARACTERCREATE-RACES")
+playerRaceIcon:SetTexCoord( 0, 0.125, 0, 0.25)
+playerRaceIcon:SetSize(20, 20)
+
+--https://us.forums.blizzard.com/en/wow/t/q-how-to-resize-a-frame/366166
+local resizeButton = CreateFrame("Button", nil, ganklistFrame)
+resizeButton:SetPoint("BOTTOMRIGHT", -6, 7)
+resizeButton:SetSize(16, 16)
+resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+
+resizeButton:SetScript("OnMouseDown", function()
+	ganklistFrame:StartSizing("BOTTOMRIGHT")
+end)
+resizeButton:SetScript("OnMouseUp", function()
+	ganklistFrame:StopMovingOrSizing()
+end)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- AceAddon3 quick start: https://www.wowace.com/projects/ace3/pages/getting-started
---Provides an addon object that can be referenced for all of AceAddon's calls. 
---You can also add additional AceAddon libraries by referencing them here.
 local GankList = LibStub("AceAddon-3.0"):NewAddon("GankList", "AceConsole-3.0", "AceEvent-3.0")
 
 local defaults = {
@@ -34,8 +117,8 @@ function GankList:createPlayerRecord(playerGUID)
     newPlayerRecord.name = tempName
 
     --Creating records with the localization-independent return values to stay consistent
-    newPlayerRecord.class = string.lower(tempClass)
-    newPlayerRecord.race = string.lower(tempRace)
+    newPlayerRecord.class = tempClass
+    newPlayerRecord.race = tempRace
 
     if tempSex == 2 then
         newPlayerRecord.sex = "male"
@@ -136,8 +219,7 @@ local COMBATLOG_FILTER_PLAYER = 0x0511
 function GankList:checkForWorldPVP()
     if not IsInInstance() then
         local _, subevent, _, attackerGUID, attackerName, attackerFlags, _, victimGUID, victimName, victimFlags = CombatLogGetCurrentEventInfo()
-
-        if CombatLog_Object_IsA(attackerFlags, COMBATLOG_FILTER_HOSTILE_PLAYERS) and CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_PLAYER) then            
+        if CombatLog_Object_IsA(attackerFlags, COMBATLOG_FILTER_HOSTILE_PLAYERS) and CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_PLAYER) then         
             local attackerRecord
             if not CombatLog_Object_IsA(attackerFlags, COMBATLOG_FILTER_HOSTILE_PLAYER_PET) then
                 print("Not a pet attacking...")
