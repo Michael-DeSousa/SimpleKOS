@@ -1,42 +1,60 @@
-local ganklistFrame = CreateFrame("Frame", "GanklistFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
-ganklistFrame:SetPoint("CENTER")
-ganklistFrame:SetSize(180, 128)
-ganklistFrame:EnableMouse(true)
-ganklistFrame:SetMovable(true)
-ganklistFrame:SetResizable(true)
-ganklistFrame:SetMinResize(160, 30)
-ganklistFrame:SetClampedToScreen(true)
-ganklistFrame:RegisterForDrag("LeftButton")
-ganklistFrame:SetScript("OnMouseDown", ganklistFrame.StartMoving)
-ganklistFrame:SetScript("OnMouseUp", ganklistFrame.StopMovingOrSizing)
-ganklistFrame:SetBackdrop(	{
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    tile = true,
-    tileSize = 32,
-})
-ganklistFrame:SetBackdropColor(0, 0, 0, 0.5)
+--For some reason I can't access this like RAID_CLASS_COLORS and CLASS_ICON_TCOORDS?
+--\Interface\GlueXML\CharacterCreate.lua
+local RACE_ICON_TCOORDS = {
+	["HUMAN_MALE"]		= {0, 0.125, 0, 0.25},
+	["DWARF_MALE"]		= {0.125, 0.25, 0, 0.25},
+	["GNOME_MALE"]		= {0.25, 0.375, 0, 0.25},
+	["NIGHTELF_MALE"]	= {0.375, 0.5, 0, 0.25},
+	
+	["TAUREN_MALE"]		= {0, 0.125, 0.25, 0.5},
+	["SCOURGE_MALE"]	= {0.125, 0.25, 0.25, 0.5},
+	["TROLL_MALE"]		= {0.25, 0.375, 0.25, 0.5},
+	["ORC_MALE"]		= {0.375, 0.5, 0.25, 0.5},
 
-local ganklistTitle = ganklistFrame:CreateFontString(ganklistFrame, "OVERLAY", "GameTooltipText")
-ganklistTitle:SetPoint("BOTTOM", ganklistFrame, "TOP")
-ganklistTitle:SetText("Ganklist")
+	["HUMAN_FEMALE"]	= {0, 0.125, 0.5, 0.75},  
+	["DWARF_FEMALE"]	= {0.125, 0.25, 0.5, 0.75},
+	["GNOME_FEMALE"]	= {0.25, 0.375, 0.5, 0.75},
+	["NIGHTELF_FEMALE"]	= {0.375, 0.5, 0.5, 0.75},
+	
+	["TAUREN_FEMALE"]	= {0, 0.125, 0.75, 1.0},   
+	["SCOURGE_FEMALE"]	= {0.125, 0.25, 0.75, 1.0}, 
+	["TROLL_FEMALE"]	= {0.25, 0.375, 0.75, 1.0}, 
+	["ORC_FEMALE"]		= {0.375, 0.5, 0.75, 1.0}, 
 
+	["BLOODELF_MALE"]	= {0.5, 0.625, 0.25, 0.5},
+	["BLOODELF_FEMALE"]	= {0.5, 0.625, 0.75, 1.0}, 
 
+	["DRAENEI_MALE"]	= {0.5, 0.625, 0, 0.25},
+	["DRAENEI_FEMALE"]	= {0.5, 0.625, 0.5, 0.75}, 								   
+};
 
 -- AceAddon3 quick start: https://www.wowace.com/projects/ace3/pages/getting-started
 local GankList = LibStub("AceAddon-3.0"):NewAddon("GankList", "AceConsole-3.0", "AceEvent-3.0")
 
+local ganklistDB
+local recentAttackersContainer
+local ganklistContainer
+local recentAttackerPlayerFrames
+local ganklistPlayerFrames
+
 local defaults = {
     factionrealm = {
       ganklist = {
-        count = 0,
       },
     }
   }
 
 function GankList:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("GankListDB", defaults, true)
+    ganklistDB = self.db.factionrealm.ganklist
     GankList:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "checkForWorldPVP")
     GankList:Print("GankList initialized!")
+    ganklistDB = self.db.factionrealm.ganklist
+    
+    recentAttackersContainer = createListContainer("Recent Attackers", UIParent)
+    recentAttackerPlayerFrames = GankList:buildPlayerList(ganklistDB, recentAttackersContainer)
+    ganklistContainer =  createListContainer("Ganklist", UIParent)
+    ganklistPlayerFrames = GankList:buildPlayerList(ganklistDB, ganklistContainer)
 end
 
 function GankList:OnEnable()
@@ -149,6 +167,70 @@ function GankList:addToGankList(playerRecord)
     end
 end
 
+
+
+
+function createListContainer(name, parent)
+    local newListContainer = CreateFrame("Frame", name.." Container", parent, BackdropTemplateMixin and "BackdropTemplate")
+    newListContainer:SetPoint("CENTER")
+    newListContainer:SetSize(180, 128)
+    newListContainer:EnableMouse(true)
+    newListContainer:SetMovable(true)
+    newListContainer:SetResizable(true)
+    newListContainer:SetMinResize(160, 30)
+    newListContainer:SetClampedToScreen(true)
+    newListContainer:RegisterForDrag("LeftButton")
+    newListContainer:SetScript("OnMouseDown", newListContainer.StartMoving)
+    newListContainer:SetScript("OnMouseUp", newListContainer.StopMovingOrSizing)
+    newListContainer:SetBackdrop(	{
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true,
+        tileSize = 32,
+    })
+    newListContainer:SetBackdropColor(0, 0, 0, 0.5)
+
+    local newListTitle = newListContainer:CreateFontString(newListContainer, "OVERLAY", "GameTooltipText")
+    newListTitle:SetPoint("BOTTOM", newListContainer, "TOP")
+    newListTitle:SetText(name)
+
+    return newListContainer
+end
+
+function GankList:buildPlayerList(db, parent)
+    local newPlayerFrameList = {}
+    for i=1, #db do
+        newPlayerFrameList[i]=GankList:createPlayerFrame(db[i], parent:GetName() .."playerFrame"..i, parent)
+        if i == 1 then
+            newPlayerFrameList[i]:SetPoint("TOPLEFT", parent, "TOPLEFT")
+            newPlayerFrameList[i]:SetPoint("TOPRIGHT", parent, "TOPRIGHT")
+        else
+            newPlayerFrameList[i]:SetPoint("TOPLEFT", newPlayerFrameList[i-1], "BOTTOMLEFT")
+            newPlayerFrameList[i]:SetPoint("TOPRIGHT", newPlayerFrameList[i-1], "BOTTOMRIGHT")
+        end
+    end
+    return newPlayerFrameList
+end
+
+function GankList:createPlayerFrame(playerRecord, name, parent)
+    local newPlayerFrame = CreateFrame("Frame", name, parent, "playerFrameTemplate")
+
+    local classColor = RAID_CLASS_COLORS[playerRecord.class]
+    newPlayerFrame:SetBackdropColor(classColor.r, classColor.g, classColor.b, 0.65)
+    
+    newPlayerFrame.name:SetText(playerRecord.name)
+
+    newPlayerFrame.playerClassIcon:SetTexture("Interface/GLUES/CHARACTERCREATE/UI-CharacterCreate-Classes")
+    local classIconCoords = CLASS_ICON_TCOORDS[strupper(playerRecord.class)]
+    newPlayerFrame.playerClassIcon:SetTexCoord(classIconCoords[1], classIconCoords[2], classIconCoords[3], classIconCoords[4])
+
+    newPlayerFrame.playerRaceIcon:SetTexture("Interface/GLUES/CHARACTERCREATE/UI-CharacterCreate-Races")
+    local raceIconCoords = RACE_ICON_TCOORDS[strupper(playerRecord.race .. "_" .. playerRecord.sex)]
+    newPlayerFrame.playerRaceIcon:SetTexCoord(raceIconCoords[1], raceIconCoords[2], raceIconCoords[3] , raceIconCoords[4])
+
+    return newPlayerFrame
+end
+
+
 --https://wowpedia.fandom.com/wiki/API_CombatLog_Object_IsA
 local COMBATLOG_FILTER_HOSTILE_PLAYERS = 0x7D4E
 local COMBATLOG_FILTER_HOSTILE_PLAYER_PET = 0x1148
@@ -208,47 +290,3 @@ function GankList:checkForWorldPVP()
     end
 end
 
-local frames = {}
-
-for i=1, 20 do
-    if i == 1 then
-        frames[i] = CreateFrame("Frame", "frame".. i, ganklistFrame, BackdropTemplateMixin and "BackdropTemplate")
-        frames[i]:SetPoint("TOPLEFT", ganklistFrame, "TOPLEFT")
-        frames[i]:SetPoint("TOPRIGHT", ganklistFrame, "TOPRIGHT")
-        frames[i]:SetHeight(26)
-
-        frames[i]:SetBackdrop(	{
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            tile = true,
-            tileSize = 32,
-        })
-
-        local classColor = RAID_CLASS_COLORS["DRUID"]
-        frames[i]:SetBackdropColor(classColor.r, classColor.g, classColor.b, 0.65)
-
-        local playerRecordName = frames[i]:CreateFontString(frames[i], "OVERLAY", "GameTooltipText")
-        playerRecordName:SetPoint("LEFT", frames[i], "LEFT", 10, 0)
-        playerRecordName:SetText("FROSTHAMMER")
-
-        local playerClassIcon = frames[i]:CreateTexture("PlayerClassIcon", "ARTWORK")
-        playerClassIcon:SetPoint("RIGHT", frames[i], "RIGHT", -5, 0)
-        playerClassIcon:SetTexture("Interface/Icons/ClassIcon_Warlock")
-        playerClassIcon:SetSize(20, 20)
-
-        local playerRaceIcon = frames[i]:CreateTexture("PlayerRaceIcon", "ARTWORK")
-        playerRaceIcon:SetPoint("RIGHT", playerClassIcon, "LEFT", 0, 0)
-        playerRaceIcon:SetTexture("Interface/Glues/CharacterCreate/UI-CHARACTERCREATE-RACES")
-        playerRaceIcon:SetTexCoord( 0, 0.125, 0, 0.25)
-        playerRaceIcon:SetSize(20, 20)
-    else
-        frames[i]=CreateFrame("Frame", "frame".. i, frames[i-1], BackdropTemplateMixin and "BackdropTemplate")
-        frames[i]:SetPoint("TOPLEFT", frames[i-1], "BOTTOMLEFT")
-        frames[i]:SetPoint("TOPRIGHT", frames[i-1], "BOTTOmRIGHT")
-        frames[i]:SetHeight(26)
-        frames[i]:SetBackdrop(	{
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            tile = true,
-            tileSize = 32,
-        })
-    end
-end
