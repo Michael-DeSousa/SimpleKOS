@@ -1,0 +1,62 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+    <Frame name="windowTemplate" enableMouse="true" movable="true" resizable="true" clampedToScreen="true" inherits="BackdropTemplate" virtual="true">
+        <Size x="180" y="132" />
+        <ResizeBounds>
+            <minResize x="150" y="26"/>
+        </ResizeBounds>
+        <Anchors>
+            <Anchor point="CENTER" relativeTo="$parent"/>
+        </Anchors>
+        <Layers>
+            <Layer level="OVERLAY">
+                <FontString name="$parentTitle" parentkey="title" inherits="Tooltip_Med" enablemouse="true">                    
+                    <Anchors>
+                        <Anchor point="BOTTOM" relativePoint="TOP" relativeTo="$parent">
+                            <Offset x="0" y="4"/>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnLoad inherit="prepend">
+                self:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                tile = true,
+                tileSize = 32,
+            })
+                self:SetBackdropColor(0, 0, 0, 0.5)
+            </OnLoad>
+            <OnMouseDown>
+                if IsShiftKeyDown() then
+                    self:StartMoving()
+                end
+            </OnMouseDown>
+            <OnMouseUp>
+                self:StopMovingOrSizing()
+            </OnMouseUp>
+        </Scripts>
+    </Frame>
+
+    <Button name="resizeButtonTemplate" virtual="true">
+        <Size x="16" y="16"/> 
+        <Anchors>
+            <Anchor point="BOTTOMRIGHT" relativeTo="$parent">
+                <Offset x="10" y="0"/>
+            </Anchor>
+        </Anchors>
+        <NormalTexture name="$parentNormalTexture" file="Interface/ChatFrame/UI-ChatIM-SizeGrabber-Up"/>
+        <HighlightTexture name="$parentHighlightTexture" file="Interface/ChatFrame/UI-ChatIM-SizeGrabber-Highlight"/>
+        <PushedTexture name="$parentPushedTexture" file="Interface/ChatFrame/UI-ChatIM-SizeGrabber-Down"/>
+        <Scripts>
+            <OnMouseDown>
+                self:GetParent():StartSizing("BOTTOMRIGHT")
+            </OnMouseDown>
+            <OnMouseUp>
+                self:GetParent():StopMovingOrSizing()
+            </OnMouseUp>
+        </Scripts>
+    </Button>
+</Ui>

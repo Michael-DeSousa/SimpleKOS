@@ -32,9 +32,10 @@ local RACE_ICON_TCOORDS = {
 local GankList = LibStub("AceAddon-3.0"):NewAddon("GankList", "AceConsole-3.0", "AceEvent-3.0")
 
 local ganklistDB
+
 local recentAttackersContainer
-local ganklistContainer
 local recentAttackerPlayerFrames
+local ganklistContainer
 local ganklistPlayerFrames
 
 local defaults = {
@@ -49,12 +50,11 @@ function GankList:OnInitialize()
     ganklistDB = self.db.factionrealm.ganklist
     GankList:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "checkForWorldPVP")
     GankList:Print("GankList initialized!")
-    ganklistDB = self.db.factionrealm.ganklist
     
     recentAttackersContainer = createListContainer("Recent Attackers", UIParent)
     recentAttackerPlayerFrames = GankList:buildPlayerList(ganklistDB, recentAttackersContainer)
-    ganklistContainer =  createListContainer("Ganklist", UIParent)
-    ganklistPlayerFrames = GankList:buildPlayerList(ganklistDB, ganklistContainer)
+    --ganklistContainer =  createListContainer("Ganklist", UIParent)
+    --ganklistPlayerFrames = GankList:buildPlayerList(ganklistDB, ganklistContainer)
 end
 
 function GankList:OnEnable()
@@ -78,13 +78,17 @@ function GankList:createPlayerRecord(playerGUID)
     elseif tempSex == 3 then
         newPlayerRecord.sex = "Female"
     else
-        newPlayerRecord.sex = "neutral"
+        newPlayerRecord.sex = "Neutral"
     end
 
     --GetPlayerInfoByGUID returns an empty string if the given playerGUID belongs to someone on the same realm as the player
     if newPlayerRecord.realm == "" then
         newPlayerRecord.realm = GetRealmName()
     end
+
+    newPlayerRecord.note = "Note:"
+    newPlayerRecord.wins = 0
+    newPlayerRecord.losses = 0
 
     return newPlayerRecord
 end
@@ -103,7 +107,6 @@ end
 
 --Given a player GUID, either returns the matching player record from recentAttackers, or returns nil if it does not exist
 function GankList:getRecentAttackerRecord(playerGUID)
-    --Don't need to loop, just check if the key playerGUID is not nil aka if recentAttackers[playerGUID] ~= nil
     print("Called getRecentAttackerRecord")
     for _, attackerRecord in ipairs(recentAttackers) do
         if attackerRecord.GUID == playerGUID then
@@ -130,13 +133,15 @@ function GankList:getPetOwnerName(petGUID)
     end
 end
 
---Given a pet's GUID, we call getPetOwnerName to get the name of its owner. We then search through our list of recent attackers to see if we can find a match and get information on the owner
+--Given a pet's GUID, we call getPetOwnerName to get the name of its owner. We then search through our list of recent attackers to see if we can find a name match and get information on the owner
 --Note: If the pet owner never directly attacks the player, then they won't be on the recentAttackers table and we won't be able to get their information.  
 function GankList:getPetOwnerRecord(petGUID) 
     local ownerName = GankList:getPetOwnerName(petGUID)
+    print("Made it to getPetOwnerRecord. The pet owner name is " .. ownerName)
     if(ownerName) then
         for _, attackerRecord in ipairs(recentAttackers) do
             if attackerRecord.name == ownerName then
+                print("getPetOwnerRecord says the name was found in recent attackers")
                 return attackerRecord
             end
         end
@@ -167,35 +172,39 @@ function GankList:addToGankList(playerRecord)
     end
 end
 
+function GankList:incrementLosses(playerGUID)
+    for _, playerRecord in ipairs(self.db.factionrealm.ganklist) do
+        if playerRecord.GUID == playerGUID then
+            print("Incrementing losses")
+            playerRecord.losses = playerRecord.losses + 1
+            return
+        end
+    end
+    print("Could not find player in ganklist, cannot increment losses")
+end
+
 
 
 
 function createListContainer(name, parent)
-    local newListContainer = CreateFrame("Frame", name.." Container", parent, BackdropTemplateMixin and "BackdropTemplate")
-    newListContainer:SetPoint("CENTER")
-    newListContainer:SetSize(180, 128)
-    newListContainer:EnableMouse(true)
-    newListContainer:SetMovable(true)
-    newListContainer:SetResizable(true)
-    newListContainer:SetMinResize(160, 30)
-    newListContainer:SetClampedToScreen(true)
-    newListContainer:RegisterForDrag("LeftButton")
-    newListContainer:SetScript("OnMouseDown", newListContainer.StartMoving)
-    newListContainer:SetScript("OnMouseUp", newListContainer.StopMovingOrSizing)
-    newListContainer:SetBackdrop(	{
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        tile = true,
-        tileSize = 32,
-    })
-    newListContainer:SetBackdropColor(0, 0, 0, 0.5)
+    local newListWindow = CreateFrame("Frame", name.."Window", parent, "windowTemplate")
+    newListWindow.title:SetText(name)
+    local newListButton = CreateFrame("Button", name.."Button", newListWindow, "resizeButtonTemplate")
 
-    local newListTitle = newListContainer:CreateFontString(newListContainer, "OVERLAY", "GameTooltipText")
-    newListTitle:SetPoint("BOTTOM", newListContainer, "TOP")
-    newListTitle:SetText(name)
-
-    return newListContainer
+    return newListWindow
 end
 
+--https://www.reddit.com/r/WowUI/comments/95o7qc/other_how_to_pixel_perfect_ui_xpost_rwow/
+--https://www.wowinterface.com/forums/showthread.php?t=26591   See Post #11
+--Ran into issues with the spacing between player frames at 3440x1440p. (See buildPlayerList() )
+--I tried a vertical offset of -1 pixel but the spacing between a couple of playerframes would be slightly larger than on others.
+--Based on these thread I then changed it to -0.75 and stopped seeing issues. Need to test on 1080p, 1440, etc.
+local scale = string.match( GetCVar( "gxWindowedResolution" ), "%d+x(%d+)" );
+local uiScale = UIParent:GetScale( ); 
+local vPixelSize = 768/scale/uiScale
+
+--Given a database of player records (see createPlayerRecord() ), creates and returns a new array of player frames
+--These frames are visible on the screen. The first frame is anchored to the top of the parent, the rest are anchored each other.
 function GankList:buildPlayerList(db, parent)
     local newPlayerFrameList = {}
     for i=1, #db do
@@ -204,13 +213,14 @@ function GankList:buildPlayerList(db, parent)
             newPlayerFrameList[i]:SetPoint("TOPLEFT", parent, "TOPLEFT")
             newPlayerFrameList[i]:SetPoint("TOPRIGHT", parent, "TOPRIGHT")
         else
-            newPlayerFrameList[i]:SetPoint("TOPLEFT", newPlayerFrameList[i-1], "BOTTOMLEFT")
-            newPlayerFrameList[i]:SetPoint("TOPRIGHT", newPlayerFrameList[i-1], "BOTTOMRIGHT")
+            newPlayerFrameList[i]:SetPoint("TOPLEFT", newPlayerFrameList[i-1], "BOTTOMLEFT", 0, -0.75 * vPixelSize)
+            newPlayerFrameList[i]:SetPoint("TOPRIGHT", newPlayerFrameList[i-1], "BOTTOMRIGHT", 0, -0.75 * vPixelSize)
         end
     end
     return newPlayerFrameList
 end
 
+--Given a player record (see createPlayerRecord() ), a name for the frame, and its parent, creates and returns an object with a frame that displays the player's information
 function GankList:createPlayerFrame(playerRecord, name, parent)
     local newPlayerFrame = CreateFrame("Frame", name, parent, "playerFrameTemplate")
 
@@ -226,6 +236,11 @@ function GankList:createPlayerFrame(playerRecord, name, parent)
     newPlayerFrame.playerRaceIcon:SetTexture("Interface/GLUES/CHARACTERCREATE/UI-CharacterCreate-Races")
     local raceIconCoords = RACE_ICON_TCOORDS[strupper(playerRecord.race .. "_" .. playerRecord.sex)]
     newPlayerFrame.playerRaceIcon:SetTexCoord(raceIconCoords[1], raceIconCoords[2], raceIconCoords[3] , raceIconCoords[4])
+
+    --We copy this data over and store it for the tooltip
+    newPlayerFrame.realm = playerRecord.realm
+    newPlayerFrame.note = playerRecord.note
+    newPlayerFrame.losses = playerRecord.losses
 
     return newPlayerFrame
 end
@@ -271,9 +286,13 @@ function GankList:checkForWorldPVP()
                         print("Killed by pet belonging to " .. attackerRecord.name)
                         if not GankList:isInGanklist(attackerRecord.GUID) then
                             print("PetOwner not in ganklist, adding...")
-                            GankList:addToGanklist(attackerRecord)
+                            print("DEBUG PET ATTACKER RECORD: " .. attackerRecord.name .. " " .. attackerRecord.GUID .. " " .. attackerRecord.class .. " " .. attackerRecord.sex .. " " .. attackerRecord.race)
+                            print(attackerRecord)
+                            GankList:addToGankList(attackerRecord)
+                            GankList:incrementLosses(attackerRecord.GUID)
                         else
-                            print("Already on ganklist")
+                            print("Already on ganklist, updating losses")
+                            GankList:incrementLosses(attackerRecord.GUID)
                         end
                     end             
                 else
@@ -281,8 +300,10 @@ function GankList:checkForWorldPVP()
                     if not GankList:isInGanklist(attackerRecord.GUID) then
                         print("Not in ganklist, adding...")
                         GankList:addToGankList(attackerRecord)
+                        GankList:incrementLosses(attackerRecord.GUID)
                     else
-                        print("Already on ganklist")
+                        print("Already on ganklist, updating losses")
+                        GankList:incrementLosses(attackerRecord.GUID)
                     end
                 end
             end
@@ -290,3 +311,19 @@ function GankList:checkForWorldPVP()
     end
 end
 
+--Not too sure what the best way to do highlighting on mouseover is, probably something more efficient than this with xml?
+function playerFrame_OnEnter(self)
+    local r, g, b = self:GetBackdropColor()
+    self:SetBackdropColor(r, g, b, 0.85)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:SetText(self.note)
+    GameTooltip:AddLine("Losses: " .. self.losses, 0.6, 0, 0)
+    GameTooltip:AddLine("Server: " .. self.realm)
+    GameTooltip:Show()
+end
+
+function playerFrame_OnLeave(self)
+    local r, g, b = self:GetBackdropColor()
+    self:SetBackdropColor(r, g, b, 0.65)
+    GameTooltip:Hide()
+end

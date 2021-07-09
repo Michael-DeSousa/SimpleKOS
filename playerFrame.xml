@@ -34,13 +34,22 @@
         </Layers>
         <Scripts>
             <OnLoad inherit="prepend">
-                print("Loaded!");
                 self:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
                 tile = true,
                 tileSize = 32,
-            });
+            })
             </OnLoad>
+            <OnMouseDown>
+                if IsShiftKeyDown() then
+                    self:GetParent():StartMoving()
+                end
+            </OnMouseDown>
+            <OnMouseUp>
+                self:GetParent():StopMovingOrSizing()
+            </OnMouseUp>
+            <OnEnter function="playerFrame_OnEnter"/>
+            <OnLeave function="playerFrame_OnLeave"/>
         </Scripts>
     </Frame>
 </Ui>
