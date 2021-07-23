@@ -1,11 +1,12 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
-    <Frame name="playerFrameTemplate" inherits="BackdropTemplate" virtual="true">
+    <!-- Kill On Sight player frame with mouseover tooltip containing a custom note, win/loss record, server, etc. -->
+    <Button name="KOSPlayerFrameTemplate" inherits="BackdropTemplate" virtual="true">
         <Size y="26"/>
         <Layers>
             <Layer level="OVERLAY">
-                <FontString name="$parentPlayerName" parentkey="name" inherits="GameTooltipText">
+                <FontString name="$parentPlayerName" parentkey="Name" inherits="GameTooltipText">
                     <Anchors>
                         <Anchor point="LEFT" relativePoint="LEFT" relativeTo="$parent">
                             <Offset x="10" y="0"/>
@@ -14,7 +15,7 @@
                 </FontString>
             </Layer>
             <Layer level="ARTWORK">
-                <Texture name="$parentPlayerClassIcon" parentKey="playerClassIcon">
+                <Texture name="$parentPlayerClassIcon" parentKey="ClassIcon">
                     <Size x="20" y="20"/>
     	            <Anchors>
                         <Anchor point="RIGHT" relativePoint="RIGHT" relativeTo="$parent">
@@ -24,7 +25,7 @@
                 </Texture>
             </Layer>
             <Layer level="ARTWORK">
-                <Texture name="$parentPlayerRaceIcon" parentKey="playerRaceIcon">
+                <Texture name="$parentPlayerRaceIcon" parentKey="RaceIcon">
                     <Size x="20" y="20"/>
     	            <Anchors>
                         <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parentPlayerClassIcon"/>
@@ -33,23 +34,54 @@
             </Layer>
         </Layers>
         <Scripts>
-            <OnLoad inherit="prepend">
-                self:SetBackdrop({
-                bgFile = "Interface\\Buttons\\WHITE8X8",
-                tile = true,
-                tileSize = 32,
-            })
-            </OnLoad>
-            <OnMouseDown>
-                if IsShiftKeyDown() then
-                    self:GetParent():StartMoving()
-                end
-            </OnMouseDown>
-            <OnMouseUp>
-                self:GetParent():StopMovingOrSizing()
-            </OnMouseUp>
-            <OnEnter function="playerFrame_OnEnter"/>
-            <OnLeave function="playerFrame_OnLeave"/>
+            <OnLoad inherit="prepend" function="KOSPlayerFrame_OnLoad"/>
+            <OnDragStart function="KOSPlayerFrame_OnDragStart"/>
+            <OnDragStop function="KOSPlayerFrame_OnDragStop"/>
+            <OnClick function="KOSPlayerFrame_OnClick"/>
+            <OnEnter function="KOSPlayerFrame_OnEnter"/>
+            <OnLeave function="KOSPlayerFrame_OnLeave"/>
         </Scripts>
-    </Frame>
+    </Button>
+
+    <!-- Recent Attackers player frame with tooltip just containing server name. Cursor also changes to crosshair icon on mouseover -->
+    <Button name="RAPlayerFrameTemplate" inherits="BackdropTemplate" virtual="true">
+        <Size y="26"/>
+        <Layers>
+            <Layer level="OVERLAY">
+                <FontString name="$parentPlayerName" parentkey="Name" inherits="GameTooltipText">
+                    <Anchors>
+                        <Anchor point="LEFT" relativePoint="LEFT" relativeTo="$parent">
+                            <Offset x="10" y="0"/>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+            <Layer level="ARTWORK">
+                <Texture name="$parentPlayerClassIcon" parentKey="ClassIcon">
+                    <Size x="20" y="20"/>
+    	            <Anchors>
+                        <Anchor point="RIGHT" relativePoint="RIGHT" relativeTo="$parent">
+                            <Offset x="-5" y="0"/>
+                        </Anchor>
+	                </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <Texture name="$parentPlayerRaceIcon" parentKey="RaceIcon">
+                    <Size x="20" y="20"/>
+    	            <Anchors>
+                        <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parentPlayerClassIcon"/>
+	                </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnLoad inherit="prepend" function="RAPlayerFrame_OnLoad"/>
+            <OnDragStart function="RAPlayerFrame_OnDragStart"/>
+            <OnDragStop function="RAPlayerFrame_OnDragStop"/>
+            <OnClick function="RAPlayerFrame_OnClick"/>
+            <OnEnter function="RAPlayerFrame_OnEnter"/>
+            <OnLeave function="RAPlayerFrame_OnLeave"/>
+        </Scripts>
+    </Button>
 </Ui>

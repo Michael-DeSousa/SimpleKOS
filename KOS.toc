@@ -1,0 +1,12 @@
+## Interface: 20501
+## Title: KOS
+## Author: Dessia
+## Notes: A handy addon for tracking your pvp enemies!
+## Version: 1.0
+## SavedVariables: KOSdb
+
+embeds.xml
+playerFrame.xml
+window.xml
+
+core.lua
