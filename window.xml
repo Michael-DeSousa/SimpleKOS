@@ -5,10 +5,10 @@
     <!-- KOS Scroll Frames have a large empty space on the left side of the window. This allows you to parent/anchor the KOSEditBox to the left of any KOSplayerFrame in the main window while keeping it visible -->
     <ScrollFrame name="KOSScrollFrameTemplate" inherits="UIPanelScrollFrameTemplate" virtual="true">
         <Anchors>
-            <Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT">
+            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent">
                 <Offset x="-175"/>
             </Anchor>
-            <Anchor point="BOTTOMRIGHT" relativeTo="$parent" relativePoint="BOTTOMRIGHT"/>
+            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parent"/>
         </Anchors>
     </ScrollFrame>
     <Frame name="KOSScrollFrameChildTemplate" virtual="true">
@@ -21,7 +21,7 @@
             <maxResize x="480" y="530"/>
         </ResizeBounds>
         <Anchors>
-            <Anchor point="CENTER" relativeTo="$parent"/>
+            <Anchor point="CENTER" relativePoint="CENTER" relativeTo="$parent"/>
         </Anchors>
         <Layers>
             <Layer level="OVERLAY">
@@ -34,6 +34,16 @@
                 </FontString>
             </Layer>
         </Layers>
+        <Frames>
+            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+                <Size x="24" y="24"/>
+                <Anchors>
+                    <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parent">
+                        <Offset x="5" y="-2"/>
+                    </Anchor>
+                </Anchors>
+            </Button>
+        </Frames>
         <Scripts>
             <OnLoad inherit="prepend" function="KOSWindow_OnLoad"/>
             <OnMouseDown function="KOSWindow_OnMouseDown"/>
@@ -69,9 +79,8 @@
     <!-- Recent Attacker windows have no need for an editbox so there is no large empty space on the side-->
     <ScrollFrame name="RAScrollFrameTemplate" inherits="UIPanelScrollFrameTemplate" virtual="true">
         <Anchors>
-            <Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT">
-            </Anchor>
-            <Anchor point="BOTTOMRIGHT" relativeTo="$parent" relativePoint="BOTTOMRIGHT"/>
+            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent"/>
+            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parent"/>
         </Anchors>
     </ScrollFrame>
     <Frame name="RAScrollFrameChildTemplate" virtual="true">
@@ -84,8 +93,18 @@
             <maxResize x="480" y="530"/>
         </ResizeBounds>
         <Anchors>
-            <Anchor point="CENTER" relativeTo="$parent"/>
+            <Anchor point="CENTER" relativePoint="CENTER" relativeTo="$parent"/>
         </Anchors>
+        <Frames>
+            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+                <Size x="24" y="24"/>
+                <Anchors>
+                    <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parent">
+                        <Offset x="5" y="-2"/>
+                    </Anchor>
+                </Anchors>
+            </Button>
+        </Frames>
         <Layers>
             <Layer level="OVERLAY">
                 <FontString name="$parentTitle" parentkey="Title" enablemouse="true" inherits="Tooltip_Med">                    

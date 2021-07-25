@@ -3,10 +3,12 @@
 ## Author: Dessia
 ## Notes: A handy addon for tracking your pvp enemies!
 ## Version: 1.0
-## SavedVariables: KOSdb
+## SavedVariables: KOSDB
 
 embeds.xml
 playerFrame.xml
 window.xml
 
+window.lua
+playerFrame.lua
 core.lua
