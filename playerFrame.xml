@@ -19,7 +19,7 @@
                     <Size x="20" y="20"/>
     	            <Anchors>
                         <Anchor point="RIGHT" relativePoint="RIGHT" relativeTo="$parent">
-                            <Offset x="-5" y="0"/>
+                            <Offset x="-6" y="0"/>
                         </Anchor>
 	                </Anchors>
                 </Texture>
@@ -28,7 +28,9 @@
                 <Texture name="$parentPlayerRaceIcon" parentKey="RaceIcon">
                     <Size x="20" y="20"/>
     	            <Anchors>
-                        <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parentPlayerClassIcon"/>
+                        <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parentPlayerClassIcon">
+                            <Offset x="-1" y = "0"/>
+                        </Anchor>
 	                </Anchors>
                 </Texture>
             </Layer>
@@ -61,7 +63,7 @@
                     <Size x="20" y="20"/>
     	            <Anchors>
                         <Anchor point="RIGHT" relativePoint="RIGHT" relativeTo="$parent">
-                            <Offset x="-5" y="0"/>
+                            <Offset x="-6" y="0"/>
                         </Anchor>
 	                </Anchors>
                 </Texture>
@@ -70,7 +72,9 @@
                 <Texture name="$parentPlayerRaceIcon" parentKey="RaceIcon">
                     <Size x="20" y="20"/>
     	            <Anchors>
-                        <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parentPlayerClassIcon"/>
+                        <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parentPlayerClassIcon">
+                            <Offset x="-1" y = "0"/>
+                        </Anchor>
 	                </Anchors>
                 </Texture>
             </Layer>

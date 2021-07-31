@@ -2,18 +2,7 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
 
-    <!-- KOS Scroll Frames have a large empty space on the left side of the window. This allows you to parent/anchor the KOSEditBox to the left of any KOSplayerFrame in the main window while keeping it visible -->
-    <ScrollFrame name="KOSScrollFrameTemplate" inherits="UIPanelScrollFrameTemplate" virtual="true">
-        <Anchors>
-            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent">
-                <Offset x="-175"/>
-            </Anchor>
-            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parent"/>
-        </Anchors>
-    </ScrollFrame>
-    <Frame name="KOSScrollFrameChildTemplate" virtual="true">
-        <Size x="240" y="600" />
-    </Frame>
+    <!-- Basic window with black transparent backdrop  -->
     <Frame name="KOSWindowTemplate" enableMouse="true" movable="true" resizable="true" clampedToScreen="true" inherits="BackdropTemplate" virtual="true">
         <Size x="180" y="132" />
         <ResizeBounds>
@@ -48,8 +37,34 @@
             <OnLoad inherit="prepend" function="KOSWindow_OnLoad"/>
             <OnMouseDown function="KOSWindow_OnMouseDown"/>
             <OnMouseUp function="KOSWindow_OnMouseUp"/>
+            <OnHide function="KOSWindow_OnHide"/>
         </Scripts>
     </Frame>
+
+    <!-- General ScrollFrame that aligns with a KOSWindow-->
+    <ScrollFrame name="KOSScrollFrameTemplate" inherits="UIPanelScrollFrameTemplate" virtual="true">
+        <Anchors>
+            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent"/>
+            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parent"/>
+        </Anchors>
+    </ScrollFrame>    
+    <Frame name="KOSScrollFrameChildTemplate" virtual="true">
+        <Size x="180" y="530" />
+    </Frame>
+
+    <!-- KOSEditBoxScrollFrames leave a large empty space on the left side of a KOSWindow. This allows you to parent/anchor the KOSEditBox to the left of any KOSPlayerFrame in the window while keeping it visible -->
+    <ScrollFrame name="KOSEditBoxScrollFrameTemplate" inherits="UIPanelScrollFrameTemplate" virtual="true">
+        <Anchors>
+            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent">
+                <Offset x="-175"/>
+            </Anchor>
+            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parent"/>
+        </Anchors>
+    </ScrollFrame>
+    <Frame name="KOSEditBoxScrollFrameChildTemplate" virtual="true">
+        <Size x="355" y="530" />
+    </Frame>
+
     <Button name="KOSResizeButtonTemplate" frameStrata="HIGH" virtual="true">
         <Size x="16" y="16"/> 
         <Anchors>
@@ -63,7 +78,9 @@
             <OnMouseUp function="KOSResizeButton_OnMouseUp"/>
         </Scripts>
     </Button>
-    <Editbox name="KOSEditBoxTemplate" multiLine="false" letters="80" inherits="InputScrollFrameTemplate" virtual="true">
+
+    <!-- This editbox should be used with a KOSEditBoxScrollFrame. -->
+    <Editbox name="KOSEditBoxTemplate" multiLine="false" letters="80" inherits="InputBoxTemplate" virtual="true">
         <Size x="160" y="16"/>
         <Anchors>
             <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$parent">
@@ -72,54 +89,9 @@
         </Anchors>
         <FontString inherits="ChatFontNormal"/>
         <Scripts>
+            <OnLoad function="KOSEditBox_OnLoad"/>
             <OnEnterPressed function="KOSEditBox_OnEnterPressed"/>
+            <OnEscapePressed function="KOSEditBox_OnEscapePressed"/>
         </Scripts>
     </Editbox>
-
-    <!-- Recent Attacker windows have no need for an editbox so there is no large empty space on the side-->
-    <ScrollFrame name="RAScrollFrameTemplate" inherits="UIPanelScrollFrameTemplate" virtual="true">
-        <Anchors>
-            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent"/>
-            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parent"/>
-        </Anchors>
-    </ScrollFrame>
-    <Frame name="RAScrollFrameChildTemplate" virtual="true">
-        <Size x="180" y="600" />
-    </Frame>
-    <Frame name="RAWindowTemplate" enableMouse="true" movable="true" resizable="true" clampedToScreen="true" inherits="BackdropTemplate" virtual="true">
-        <Size x="180" y="132" />
-        <ResizeBounds>
-            <minResize x="150" y="80"/>
-            <maxResize x="480" y="530"/>
-        </ResizeBounds>
-        <Anchors>
-            <Anchor point="CENTER" relativePoint="CENTER" relativeTo="$parent"/>
-        </Anchors>
-        <Frames>
-            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
-                <Size x="24" y="24"/>
-                <Anchors>
-                    <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parent">
-                        <Offset x="5" y="-2"/>
-                    </Anchor>
-                </Anchors>
-            </Button>
-        </Frames>
-        <Layers>
-            <Layer level="OVERLAY">
-                <FontString name="$parentTitle" parentkey="Title" enablemouse="true" inherits="Tooltip_Med">                    
-                    <Anchors>
-                        <Anchor point="BOTTOM" relativePoint="TOP" relativeTo="$parent">
-                            <Offset x="0" y="4"/>
-                        </Anchor>
-                    </Anchors>
-                </FontString>
-            </Layer>
-        </Layers>
-        <Scripts>
-            <OnLoad inherit="prepend" function="RAWindow_OnLoad"/>
-            <OnMouseDown function="RAWindow_OnMouseDown"/>
-            <OnMouseUp function="RAWindow_OnMouseUp"/>
-        </Scripts>
-    </Frame>
 </Ui>

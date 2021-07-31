@@ -1,48 +1,61 @@
--- Hey there! This is the source code for KOS TBC!
+-- Hey there! This is the source code for Simple KOS!
 -- This is my first addon so I'm still very new to Lua and the WoW API.
--- If you have any feedback or suggestions feel free to email me at kosaddon@gmail.com. Thanks!
-
--- Useful Resources:
--- WoW Programming Book: http://garde.sylvanas.free.fr/ressources/Guides/Macros-Addons/Wiley-World.of.Warcraft.Programming.A.Guide.and.Reference.for.Creating.WoW.Addons.pdf
--- AceAddon3 quick start: https://www.wowace.com/projects/ace3/pages/getting-started
+-- If you have any feedback on the code or suggestions for features feel free to email me at kosaddon@gmail.com. Thanks!
 
 local _, KOS = ...
 
+-- AceAddon3 quick start: https://www.wowace.com/projects/ace3/pages/getting-started
 LibStub("AceAddon-3.0"):NewAddon(KOS, "KOS", "AceConsole-3.0", "AceEvent-3.0")
 
+-- KOS does not have an "Options" menu right now so the Player cannot select different profiles.
+-- For now, we're saving the window visibility data on a per character basis and just calling that the "Profile".
+-- Window sizes and positions are temporarily being saved by WoW with "SetUserPlaced".
+KOS.Profile = {}
 
 local defaults = {
+    char = {
+        showRA = true,
+        showKOS = true,
+        autoAdd = true,
+    },
     factionrealm = {
-      KillOnSight = {
-      },
+      KillOnSight = {},
     }
 }
 
--- The "Recent Attackers" AttackerList is updated with new AttackerRecords as the Player is ATTACKED (Melee, spell, DoT, Debuffs, etc.) by World PVP opponents. 
--- These records are used to generate RAPlayerFrames which are displayed in the "Recent Attackers" window.
--- The records are lost when the Player logs out unless they are transferred to the KOS.KillOnSight.DB.
-KOS.RecentAttackers = {}
-KOS.RecentAttackers.AttackerList = {}
-KOS.RecentAttackers.PlayerFrames = {}
-KOS.RecentAttackers.RecycledFrames = {}
+-- The "Recent Attackers" AttackerList is updated with new AttackerRecords as the Player is ATTACKED (Melee, Ranged, DoTs, Debuffs, etc.) by World PVP opponents. 
+-- These AttackerRecords are used to generate RAPlayerFrames which are displayed in the "Recent Attackers" window.
+-- AttackerRecords are lost when the Player logs out unless they are transferred to the KOS DB.
+KOS.RecentAttackers = {
+    AttackerList = {},
+    PlayerFrames = {},
+    RecycledFrames = {},
+}
 
--- The KOS.KillOnSight.DB is updated with new AttackerRecords when the player is KILLED by World PVP opponents. The Player can manually transfer AttackerRecords from the "Recent Attackers" AttackerList to the KOS.KillOnSight.DB as well.
--- These records are used to generate KOSPlayerFrames which are displayed in the "Kill On Sight" window.
--- The database of records is saved to the SavedVariables folder when the Player logs out and loaded when the Player logs back in.
-KOS.KillOnSight = {}
-KOS.KillOnSight.DB = {}
-KOS.KillOnSight.PlayerFrames = {}
-KOS.KillOnSight.RecycledFrames = {}
+-- The KOS DB is updated with new AttackerRecords when the Player is KILLED by World PVP opponents. The Player can manually transfer AttackerRecords from the "Recent Attackers" AttackerList to the KOS DB as well.
+-- These AttackerRecords are used to generate KOSPlayerFrames which are displayed in the "Kill On Sight" window.
+-- The database of AttackerRecords is saved to the SavedVariables folder when the Player logs out and loaded when the Player logs back in.
+KOS.KillOnSight = {
+    DB = {},
+    PlayerFrames = {},
+    RecycledFrames = {},
+}
 
 function KOS:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("KOSDB", defaults, true)
-    KOS.KillOnSight.DB = self.db.factionrealm.KillOnSight
+    self.Profile = self.db.char
+    self.KillOnSight.DB = self.db.factionrealm.KillOnSight
 
-    self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "scanForWorldPVP")
+    self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "ScanForWorldPVP")
+
+    self:RegisterChatCommand("kos", "HandleSlashCommand")
     
-    self.RecentAttackers.Window = self:CreateWindow("RA", "Recent Attackers", UIParent, "RA")
-    self.KillOnSight.Window = self:CreateWindow("KOS", "Kill On Sight", UIParent, "KOS")
-    self.KillOnSight.PlayerFrames = self:CreatePlayerFramesFromDB("KOS", KOS.KillOnSight.DB, self.KillOnSight.Window.ScrollFrameChild, "KOS")
+    self.RecentAttackers.Window = self:CreateWindow("RA", "Recent Attackers", false, UIParent)
+    self.RecentAttackers.Window:SetShown(self.Profile.showRA)
+
+    self.KillOnSight.Window = self:CreateWindow("KOS", "Kill On Sight", true, UIParent)
+    self.KillOnSight.Window:SetShown(self.Profile.showKOS)
+    self.KillOnSight.PlayerFrames = self:CreatePlayerFramesFromDB("KOS", self.KillOnSight.DB, self.KillOnSight.Window, "KOS")
 
     self:Print("Initialized!")
 end
@@ -55,8 +68,8 @@ function KOS:OnDisable()
 end
 
 -- AttackerRecords are the core of KOS. KOS generates an AttackerRecord for every opponent that attacks the Player in World PVP. 
--- An AttackerRecord contains the opponent's GUID, name, class, race, sex, and realm.
--- It also contains a Win/Loss record for battles between the opponent and the Player, as well as a custom note that the Player can add to the record. Note: These two features are only usable by the Player when an AttackerRecord is transferred to the "Kill On Sight" list.
+-- An AttackerRecord contains an attacker's GUID, name, class, race, sex, and realm.
+-- It also contains a Win/Loss record for battles between the opponent and the Player, as well as a custom note that the Player can add to the AttackerRecord. Note: These two features are only usable by the Player when an AttackerRecord is transferred to the "Kill On Sight" list.
 function KOS:CreateAttackerRecord(attackerGUID)
     local newAttackerRecord = {}
 
@@ -79,9 +92,9 @@ function KOS:CreateAttackerRecord(attackerGUID)
         newAttackerRecord.Sex = "Unknown"
     end
 
-    -- GetPlayerInfoByGUID returns an empty string if the given attackerGUID belongs to someone on the same realm as the player
+    -- GetPlayerInfoByGUID returns an empty string if the given attackerGUID belongs to someone on the same realm as the Player
     if newAttackerRecord.Realm == "" then
-        newAttackerRecord.Realm = GetRealmName()
+        newAttackerRecord.Realm = GetNormalizedRealmName()
     end
 
     newAttackerRecord.Note = "Note: "
@@ -99,56 +112,37 @@ function KOS:AddToRecentAttackers(attackerGUID)
     print("Record created. GUID is " .. newAttackerRecord.GUID)
     
     table.insert(self.RecentAttackers.AttackerList, newAttackerRecord)
-
-    -- We append a new number (starting from 1) to each new frame so that the names are unique. 
-    local frameNumber = #self.RecentAttackers.PlayerFrames + #self.RecentAttackers.RecycledFrames + 1
-    local newPlayerFrame = self:CreatePlayerFrame(newAttackerRecord, "RAPlayerFrame".. frameNumber, self.RecentAttackers.Window.ScrollFrameChild, "RA")
+    print("Inserted new record")
     
-    self:AppendPlayerFrame(newPlayerFrame, self.RecentAttackers.PlayerFrames, self.RecentAttackers.Window.ScrollFrameChild)
+    local newPlayerFrame
+    -- If we use a recycled PlayerFrame then we can just unhide it without appending it again
+        -- We append a new number (starting from 1) to each new frame so that the names are unique.
+        local frameNumber = #self.RecentAttackers.PlayerFrames + #self.RecentAttackers.RecycledFrames + 1
+        newPlayerFrame = self:CreatePlayerFrame(newAttackerRecord, "RAPlayerFrame".. frameNumber, self.RecentAttackers.Window.ScrollFrameChild, "RA")
+        self:AppendPlayerFrame(newPlayerFrame, self.RecentAttackers.PlayerFrames, self.RecentAttackers.Window)
 end
 
+
+-- Searches for an AttackerRecord with a matching GUID in the "Recent Attackers" AttackerList. Deletes the record if found.
+-- Searches for an RAPlayerFrame with a matching GUID. Recycles the RAPlayerFrame if found.
+-- If an RAPlayerFrame was deleted, shifts all RAPlayerFrames under the deleted one upwards to get rid of the empty space
 function KOS:RemoveFromRecentAttackers(attackerGUID)
-    print("Called RemoveFromRecentAttackers")
-    print("Before deletion in player list")
-    for i, value in ipairs(KOS.RecentAttackers.AttackerList) do
-        print(value.Name)
-    end
-    print("Before deletion in player frames")
-    for i, value in ipairs(KOS.RecentAttackers.PlayerFrames) do
-        print(value.AttackerRecord.GUID)
-    end
-    print("Before deletion in recycled list")
-    for i, value in ipairs(KOS.RecentAttackers.RecycledFrames) do
-        print(value)
-    end
-    for key, attackerRecord in ipairs(KOS.RecentAttackers.AttackerList) do
+    for key, attackerRecord in ipairs(self.RecentAttackers.AttackerList) do
         if attackerRecord.GUID == attackerGUID then
-            table.remove(KOS.RecentAttackers.AttackerList, i)
+            table.remove(self.RecentAttackers.AttackerList, key)
             break
         end
     end
 
-    local playerFrameIndex
-    for i, playerFrame in ipairs(KOS.RecentAttackers.PlayerFrames) do
+    for key, playerFrame in ipairs(KOS.RecentAttackers.PlayerFrames) do
         if playerFrame.AttackerRecord.GUID == attackerGUID then
-            playerFrameIndex = i
-            self:RecyclePlayerFrame(playerFrame, self.RecentAttackers.RecycledFrames)
-            table.remove(KOS.RecentAttackers.PlayerFrames, i)
+            self:ShiftPlayerFrames(key, #self.RecentAttackers.PlayerFrames - 1, self.RecentAttackers.PlayerFrames)
+            break
         end
     end
-    print("After deletion in player list")
-    for i, value in ipairs(KOS.RecentAttackers.AttackerList) do
-        print(value.Name)
-    end
-    print("After deletion in player frames")
-    for i, value in ipairs(KOS.RecentAttackers.PlayerFrames) do
-        print(value.AttackerRecord.GUID)
-    end
-    print("After deletion in recycled list")
-    for i, value in ipairs(KOS.RecentAttackers.RecycledFrames) do
-        print(value)
-    end
-    KOS:ReanchorPlayerFrames(playerFrameIndex, #KOS.RecentAttackers.PlayerFrames, KOS.RecentAttackers.PlayerFrames, KOS.RecentAttackers.Window.ScrollFrameChild)
+    -- After shifting all the PlayerFrames "up" one position the very last PlayerFrame ends up being a duplicate of the one above it
+    self:RecyclePlayerFrame(self.RecentAttackers.PlayerFrames[#self.RecentAttackers.PlayerFrames], self.RecentAttackers.RecycledFrames)
+    table.remove(self.RecentAttackers.PlayerFrames, #self.RecentAttackers.PlayerFrames)
 end
 
 -- Takes an attackerGUID and either returns the matching AttackerRecord from the "Recent Attackers" AttackerList, or returns nil if it does not exist
@@ -174,17 +168,18 @@ function KOS:GetPetOwnerName(petGUID)
         petScanner:SetHyperlink(format('unit:%s', petGUID))
 
         local ownerText = tooltipText:GetText()
-        local ownerName, _ = string.split("'", ownerText)
+        local ownerName = string.match(ownerText, "%P*")
+        print("Owner name is " .. ownerName)
         return ownerName
     end
 end
 
 -- Takes a pet's GUID and attempts to return the AttackerRecord of the pet's owner from the "Recent Attackers" AttackerList.
--- Note: If the pet's owner never directly attacks the player, then they won't be on the AttackerList and we won't be able to retreive a record.  
+-- Note: If the pet's owner never directly attacks the player, then they won't be on the AttackerList and we won't be able to retreive an AttackerRecord.  
 function KOS:GetPetOwnerRecord(petGUID) 
     local ownerName = KOS:GetPetOwnerName(petGUID)
     print("Made it to GetPetOwnerRecord. The pet owner name is " .. ownerName)
-    if(ownerName) then
+    if ownerName then
         for _, attackerRecord in ipairs(KOS.RecentAttackers.AttackerList) do
             if attackerRecord.Name == ownerName then
                 print("GetPetOwnerRecord says the name was found in recent attackers")
@@ -194,22 +189,28 @@ function KOS:GetPetOwnerRecord(petGUID)
     end
 end
 
--- Adds the given AttackerRecord to the KOS.KillOnSight.DB. 
--- AttackerRecords added to the KOS.KillOnSight.DB will be saved to the Player's "Saved Variables" folder and be loaded when they log back in.
+-- Adds the given AttackerRecord to the KOS DB. 
+-- AttackerRecords added to the KOS DB will be saved to the Player's "SavedVariables" folder and be loaded when they log back in.
 -- Also generates a new KOSPlayerFrame using the created AttackerRecord and appends it to the "Kill On Sight" Window.
 function KOS:AddToKOS(attackerRecord)
     print("Called AddToKOS")
     table.insert(KOS.KillOnSight.DB, attackerRecord)
 
-    -- We give each frame a unique name to reference and reuse them later
-    print("REACHED")
-    local frameNumber = #self.KillOnSight.PlayerFrames + #self.KillOnSight.RecycledFrames + 1
-    local newPlayerFrame = self:CreatePlayerFrame(attackerRecord, "KOSPlayerFrame".. frameNumber, self.KillOnSight.Window.ScrollFrameChild, "KOS")
+    local newPlayerFrame
+    -- If we use a recycled PlayerFrame then we can just unhide it without appending it again
     
-    self:AppendPlayerFrame(newPlayerFrame, self.KillOnSight.PlayerFrames, self.KillOnSight.Window.ScrollFrameChild)
-    print("FINISHED APPENDING")
+        print("using a new frame instead")
+        -- We append a new number (starting from 1) to each new frame so that the names are unique.
+        local frameNumber = #self.KillOnSight.PlayerFrames + #self.KillOnSight.RecycledFrames + 1
+        newPlayerFrame = self:CreatePlayerFrame(attackerRecord, "KOSPlayerFrame".. frameNumber, self.KillOnSight.Window.ScrollFrameChild, "KOS")
+        print("done creating new frame")
+        self:AppendPlayerFrame(newPlayerFrame, self.KillOnSight.PlayerFrames, self.KillOnSight.Window)
+        print("done appending")
 end
 
+-- Searches for an AttackerRecord with a matching GUID in the KOS DB. Deletes the record if found.
+-- Searches for an KOSPlayerFrame with a matching GUID. Recycles the KOSPlayerFrame if found.
+-- If an KOSPlayerFrame was deleted, shifts all KOSPlayerFrames under the deleted one upwards to get rid of the empty space
 function KOS:RemoveFromKillOnSight(attackerGUID)
     for key, attackerRecord in ipairs(KOS.KillOnSight.DB) do
         if attackerRecord.GUID == attackerGUID then
@@ -220,20 +221,20 @@ function KOS:RemoveFromKillOnSight(attackerGUID)
     end
 
     print("Now removing KOSPlayerFrame")
-    -- After recycling the requested playerFrame, we will reanchor all frames from that index onwards. We move them up to fill the empty space.
     local playerFrameIndex
     for key, playerFrame in ipairs(KOS.KillOnSight.PlayerFrames) do
         if playerFrame.AttackerRecord.GUID == attackerGUID then
             playerFrameIndex = key
-            self:RecyclePlayerFrame(playerFrame, self.KillOnSight.RecycledFrames)
-            table.remove(KOS.KillOnSight.PlayerFrames, key)
+            self:ShiftPlayerFrames(playerFrameIndex, #self.KillOnSight.PlayerFrames - 1, self.KillOnSight.PlayerFrames)
+            break
         end
     end
-    print("player frame index is: " .. playerFrameIndex)
-    KOS:ReanchorPlayerFrames(playerFrameIndex, #KOS.KillOnSight.PlayerFrames, KOS.KillOnSight.PlayerFrames, KOS.KillOnSight.Window.ScrollFrameChild)
+    self:RecyclePlayerFrame(self.KillOnSight.PlayerFrames[#self.KillOnSight.PlayerFrames], self.KillOnSight.RecycledFrames)
+    table.remove(self.KillOnSight.PlayerFrames, #self.KillOnSight.PlayerFrames)
+    print("done removing from kos")
 end
 
--- Takes an attackerGUID and returns true if there is an AttackerRecord for that GUID in KOS.KillOnSight.DB. Returns false if there is not.
+-- Takes an attackerGUID and returns true if there is an AttackerRecord for that GUID in the KOS DB. Returns false if there is not.
 function KOS:IsInKOSDB(attackerGUID)
     print("Called IsInKOSDB")
     for _, attackerRecord in ipairs(KOS.KillOnSight.DB) do
@@ -245,7 +246,7 @@ function KOS:IsInKOSDB(attackerGUID)
     return false
 end
 
--- Searches the KOS.KillOnSight.DB for an AttackerRecord that has the given attackerGUID. Increments the "Wins" statistic on the AttackerRecord if a match is found. 
+-- Searches the KOS DB for an AttackerRecord that has the given attackerGUID. Increments the "Wins" statistic on the AttackerRecord if a match is found. 
 function KOS:IncrementWins(attackerGUID)
     for _, attackerRecord in ipairs(KOS.KillOnSight.DB) do
         if attackerRecord.GUID == attackerGUID then
@@ -257,7 +258,7 @@ function KOS:IncrementWins(attackerGUID)
     KOS:Print("KOS couldn't find the player in the list to update your wins")
 end
 
--- Searches the KOS.KillOnSight.DB for an AttackerRecord that has the given attackerGUID. Increments the "Losses" statistic on the AttackerRecord if a match is found. 
+-- Searches the KOS DB for an AttackerRecord that has the given attackerGUID. Increments the "Losses" statistic on the AttackerRecord if a match is found. 
 function KOS:IncrementLosses(attackerGUID)
     for _, attackerRecord in ipairs(KOS.KillOnSight.DB) do
         if attackerRecord.GUID == attackerGUID then
@@ -269,7 +270,7 @@ function KOS:IncrementLosses(attackerGUID)
     KOS:Print("KOS couldn't find the player in the list to update their losses")
 end
 
--- Searches the KOS.KillOnSight.DB for an AttackerRecord that has the given attackerGUID. Updates the AttackerRecord's note if a match is found. 
+-- Searches the KOS DB for an AttackerRecord that has the given attackerGUID. Updates the AttackerRecord's note if a match is found. 
 function KOS:UpdateNote(attackerGUID, note)
     for _, attackerRecord in ipairs(KOS.KillOnSight.DB) do
         if attackerRecord.GUID == attackerGUID then
@@ -287,13 +288,20 @@ local COMBATLOG_FILTER_HOSTILE_PLAYER = 0x7D4E
 local COMBATLOG_FILTER_HOSTILE_PLAYER_PET = 0x3148
 local COMBATLOG_FILTER_ME = 0x0511
 
-function KOS:scanForWorldPVP()
-    if not IsInInstance() then
+--Basic Flow:
+-- Ignore all combatlog events that happen inside of instances.
+-- If the Player or party member kills someone on their KOS list, increment the "Wins" stat.
+-- Otherwise, if the Player was damaged by a PVP opponent, either get or create their AttackerRecord. Ignore pets for now because we might not have an AttackerRecord yet for the owner.
+-- Check to see if there is overkill damage. This means the player was killed.
+-- If the overkill damage was caused by a pet, attempt to get the owner's AttackerRecord.
+-- Check if the AttackerRecord is on the KOS List. Add it to the list if it is not. Increment "Losses".
+function KOS:ScanForWorldPVP()
+    --if not IsInInstance() then
         local _, subevent, _, attackerGUID, attackerName, attackerFlags, _, victimGUID, victimName, victimFlags, _, _, meleeOverkill, _, _, rangedOverkill = CombatLogGetCurrentEventInfo()
 
-        if subevent == "PARTY_KILL" and CombatLog_Object_IsA(attackerFlags, COMBATLOG_FILTER_ME) and CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_HOSTILE_PLAYER) and not CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_HOSTILE_PLAYER_PET) then
+        if subevent == "PARTY_KILL" and CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_HOSTILE_PLAYER) and not CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_HOSTILE_PLAYER_PET) then
             if KOS:IsInKOSDB(victimGUID) then
-                KOS:Print("You killed " .. victimName .. "from your KOS list!")
+                KOS:Print("You killed " .. victimName .. " from your KOS list!")
                 KOS:IncrementWins(victimGUID)
             end
         elseif CombatLog_Object_IsA(attackerFlags, COMBATLOG_FILTER_HOSTILE_PLAYER) and CombatLog_Object_IsA(victimFlags, COMBATLOG_FILTER_ME) then
@@ -312,7 +320,7 @@ function KOS:scanForWorldPVP()
             -- https://wowpedia.fandom.com/wiki/COMBAT_LOG_EVENT
             -- We check for the Player's death by scanning the combat log for an event where an opponent's attack scores overkill damage (meaning it killed the Player).
             -- This does not seem to be 100% accurate (sometimes there is no overkill damage, multiple overkill hits, etc.). However, I do not know of a better way to scan for this while still being able to access the Attacker's information
-            local overkill
+            local overkill = -1
             if (subevent == "SWING_DAMAGE") then
                 overkill = meleeOverkill
             elseif (subevent == "SPELL_DAMAGE") or (subevent == "SPELL_PERIODIC_DAMAGE") or (subevent == "RANGE_DAMAGE") then
@@ -332,12 +340,14 @@ function KOS:scanForWorldPVP()
                     end
                 end
                 print("Killed by " .. attackerRecord.Name)
-                if not KOS:IsInKOSDB(attackerRecord.GUID) then
+                if KOS:IsInKOSDB(attackerRecord.GUID) then
+                    KOS:IncrementLosses(attackerRecord.GUID)
+                elseif self.Profile.autoAdd then
                     print("Not in KOS, adding...")
                     KOS:AddToKOS(attackerRecord)
+                    KOS:IncrementLosses(attackerRecord.GUID)
                 end
-                KOS:IncrementLosses(attackerRecord.GUID)
             end
         end
-    end
+    --end
 end

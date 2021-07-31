@@ -1,14 +1,16 @@
-## Interface: 20501
-## Title: KOS
+## Interface: 90100
+## Title: Simple KOS
 ## Author: Dessia
-## Notes: A handy addon for tracking your pvp enemies!
+## Notes: Remember your World PVP enemies!
 ## Version: 1.0
 ## SavedVariables: KOSDB
 
 embeds.xml
-playerFrame.xml
 window.xml
+playerFrame.xml
+
 
 window.lua
 playerFrame.lua
+slashCommands.lua
 core.lua
