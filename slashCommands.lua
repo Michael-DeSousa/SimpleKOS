@@ -4,7 +4,7 @@ function KOS:PrintSlashCommands()
     self:Print("Slash Commands")
     print("|cff00FF7F/kos |cffffff00show |cffFFC125RA |cffffffffor |cffFFC125KOS |cffffffff: Shows the \"Recent Attackers\" or \"Kill On Sight\" Window")
     print("|cff00FF7F/kos |cffff6060hide |cffFFC125RA |cffffffffor |cffFFC125KOS |cffffffff: Hides the \"Recent Attackers\" or \"Kill On Sight\" Window")
-    print("|cff00FF7F/kos |cffffff00autoadd |cffFFC125ON |cffffffffor |cffff6060OFF |cffffffff: Automatically adds players to your KOS list when they kill you")
+    print("|cff00FF7F/kos |cffffff00autoadd |cffFFC125ON |cffffffffor |cffff6060OFF |cffffffff: Automatically adds players to your KOS list if they kill you")
 end
 
 -- Shows the given window and saves its visibility for future logins.
@@ -33,10 +33,10 @@ end
 function KOS:SetAutoAdd(parameter)
     if parameter == "ON" then
         self.Profile.autoAdd = true
-        self:Print("AutoAdd turned on.")
+        self:Print("|cffffff00AutoAdd |cffffffffturned on.")
     elseif parameter == "OFF" then
         self.Profile.autoAdd = false
-        self:Print("Auto Add turned off.")
+        self:Print("|cffffff00AutoAdd |cffffffffturned off.")
     end
 end    
 

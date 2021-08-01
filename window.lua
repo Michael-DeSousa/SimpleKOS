@@ -15,11 +15,11 @@ function KOS:CreateWindow(windowName, windowTitle, addEditBox, parent)
         newWindow.EditBox:Hide()
 
         --All PlayerFrames appended to this window need to be shifted to the right in order to make room for the EditBox.
-        newWindow.PlayerFrameOffset = 175
+        newWindow.playerFrameOffset = 175
     else
         newWindow.ScrollFrame = CreateFrame("ScrollFrame", windowName.."ScrollFrame", newWindow, "KOSScrollFrameTemplate")
         newWindow.ScrollFrameChild = CreateFrame("Frame", windowName.."ScrollFrameChild", newWindow.ScrollFrame, "KOSScrollFrameChildTemplate")
-        newWindow.PlayerFrameOffset = 0
+        newWindow.playerFrameOffset = 0
     end
 
     newWindow.ScrollFrame:SetScrollChild(newWindow.ScrollFrameChild)
@@ -83,8 +83,8 @@ function KOSEditBox_OnEnterPressed(self)
         newNote = "Note: "
     end
     local playerFrame = self:GetParent()
-    playerFrame.AttackerRecord.Note = newNote
-    KOS:UpdateNote(playerFrame.AttackerRecord.GUID, newNote)
+    playerFrame.AttackerRecord.note = newNote
+    KOS:UpdateNote(playerFrame.AttackerRecord.guid, newNote)
 end
 
 function KOSEditBox_OnEscapePressed(self)

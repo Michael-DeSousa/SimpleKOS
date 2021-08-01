@@ -1,7 +1,7 @@
 ## Interface: 90100
 ## Title: Simple KOS
 ## Author: Dessia
-## Notes: Remember your World PVP enemies!
+## Notes: Remembers your World PVP enemies!
 ## Version: 1.0
 ## SavedVariables: KOSDB
 

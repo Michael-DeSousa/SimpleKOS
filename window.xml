@@ -14,7 +14,7 @@
         </Anchors>
         <Layers>
             <Layer level="OVERLAY">
-                <FontString name="$parentTitle" parentkey="Title" enablemouse="true" inherits="Tooltip_Med">                    
+                <FontString name="$parentTitle" parentkey="Title" inherits="Tooltip_Med">                    
                     <Anchors>
                         <Anchor point="BOTTOM" relativePoint="TOP" relativeTo="$parent">
                             <Offset x="0" y="4"/>
