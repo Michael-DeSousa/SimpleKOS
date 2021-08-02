@@ -1,4 +1,4 @@
--- Hey there! This is the source code for Simple KOS!
+-- Hey there!
 -- This is my first addon so I'm still very new to Lua and the WoW API.
 -- If you have any feedback on the code or suggestions for features feel free to email me at kosaddon@gmail.com. Thanks!
 
@@ -115,7 +115,6 @@ end
 ----------   
 function KOS:GetPetOwnerRecord(petGUID) 
     local ownerName = self:GetPetOwnerName(petGUID)
-    print("Made it to GetPetOwnerRecord. The pet owner name is " .. ownerName)
     if ownerName then
         for _, attackerRecord in ipairs(KOS.RecentAttackers.AttackerList) do
             if attackerRecord.name == ownerName then
@@ -138,7 +137,6 @@ function KOS:GetPetOwnerName(petGUID)
         local ownerText = tooltipText:GetText()
         -- http://lua-users.org/wiki/PatternsTutorial
         local ownerName = string.match(ownerText, "%P*")
-        print("Owner name is " .. ownerName)
         return ownerName
     end
 end
@@ -330,13 +328,14 @@ function KOS:ScanForWorldPVP()
                 -- The data you can get on opponents of the opposite faction seems limited.
                 -- See GetPetOwnerRecord() and GetPetOwnerName() for the janky solution I came up with
                 if CombatLog_Object_IsA(attackerFlags, COMBATLOG_FILTER_HOSTILE_PLAYER_PET) then
-                    attackerRecord = KOS:GetPetOwnerRecord(attackerGUID)
+                    attackerRecord = self:GetPetOwnerRecord(attackerGUID)
                     if not attackerRecord then
                         self:Print("You were Killed by " .. self:GetPetOwnerName(attackerGUID) .. "'s pet but KOS could not scan the player's information.")
                         return
                     end
                 end
                 if self:IsInKOSDB(attackerRecord.guid) then
+                    self:Print("You were killed " .. attackerName .. " from your KOS list.")
                     self:IncrementLosses(attackerRecord.guid)
                 elseif self.Profile.autoAdd then
                     self:AddToKOS(attackerRecord)

@@ -146,8 +146,8 @@ function KOS:CreatePlayerFrame(attackerRecord, frameName, parent, frameType)
             local rightPoint, rightRelativeTo, rightRelativePoint, rightXOff, rightYOff = self:GetPoint(2)
             -- If a PlayerFrame is not directly anchored to the top of a ScrollFrameChild, then it is anchored underneath another PlayerFrame with a 1 px offset
             if not string.match(leftRelativeTo:GetName(), ".*ScrollFrameChild") and not string.match(rightRelativeTo:GetName(), ".*ScrollFrameChild")  then
-                PixelUtil.SetPoint(self, leftPoint, leftRelativeTo, leftRelativePoint, 0, -1, 0, -1)
-                PixelUtil.SetPoint(self, rightPoint, rightRelativeTo, rightRelativePoint, 0, -1, 0, -1)
+                PixelUtil.SetPoint(self, leftPoint, leftRelativeTo, leftRelativePoint, 0, -1, 0, 1)
+                PixelUtil.SetPoint(self, rightPoint, rightRelativeTo, rightRelativePoint, 0, -1, 0, 1)
             end
     end)
 
