@@ -1,3 +1,5 @@
+![SimpleKOS](https://user-images.githubusercontent.com/22509729/128433220-ec5e1cb8-ab0e-4eaa-bf87-feb4a009aa2c.png)
+
 # Demo
 [Video](https://youtube.com)
 
