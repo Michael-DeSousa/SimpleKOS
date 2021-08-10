@@ -37,5 +37,6 @@ Note: This is my first addon and it is a WORK IN PROGRESS. Feel free to leave fe
 
 # Technologies Used
 * Lua
+* XML
 * WoW API [Link](https://wowprogramming.com/docs/api.html)
 * Ace3 Addon Framework [Link](https://www.wowace.com/projects/ace3/pages/getting-started)
