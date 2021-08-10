@@ -1,7 +1,7 @@
 ![SimpleKOS](https://user-images.githubusercontent.com/22509729/128433220-ec5e1cb8-ab0e-4eaa-bf87-feb4a009aa2c.png)
 
 # Demo
-[Video](https://youtube.com)
+[Video](https://www.youtube.com/watch?v=xL7zuwZx5dE)
 
 You can also find this project on [Curseforge](https://www.curseforge.com/wow/addons/simple-kos) and [WoWInterface](https://www.wowinterface.com/downloads/info26125-SimpleKOS.html)
 # Project Overview
